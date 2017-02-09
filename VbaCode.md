@@ -86,7 +86,7 @@ Rules for adjusting an Excel Name ("_" as replace character):
 - Cell-ref like: prepend the replace char
   - "A1" -> "_A1"
   - "R1C1" -> "_R1C1"
-  - Note: this check is intentionally more strict than necessary: see "Cell-References" below for details
+  - Note: this check is intentionally more strict than necessary: see ["Cell-References"](#cell-references) below for details
 
 ### Cell-References
 The Excel Name check functions in our VBA code are overly strict for cell-reference-like Excel Names.  
@@ -103,6 +103,7 @@ Notes:
   but still you cannot use this as an Excel Name.
 
 Excel 2013 Examples (X = INVALID):
+
 | Example | Cell-Ref | Excel-Name | Note |
 | --- | --- | --- | --- |
 | R1048576C1 | VALID | X | R1C1 reference (row lower than max-Excel rows) |
