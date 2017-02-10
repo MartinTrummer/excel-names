@@ -7,6 +7,35 @@ Excel 2013 has been used to create the sheet.
 1. Download and check info in the [Excel Sheet](NameRulesUnicode64k.xlsm)
 1. Copy the [VBA source code](VbaCode.md) to your VBA project and use it 
 
+### Example Use-Case
+You get a .csv file that contains row-headers in the first line and data.  
+You should import the data and use the row-headers in the first line to
+generate Excel Names.  
+
+```csv
+"Zeit hh:mm","Preis $","Preis/h","1"
+08:00,127.12,25.17,17
+...
+```
+The problem, is that you have no control over the row-headers, so they
+could contain characters that are not allowed in Excel names.  
+But you should of course keep the row-headers as readable as possible.
+
+**Possible Solution**
+
+Use `PrintAdjustedNames` to replace all invalid characters in the row-header with a valid char.
+
+You should also consider to use a name-suffix that is always valid at the start: 
+e.g. `n.` for better support of invalid start characters (e.g. numbers 1, 2, ..) 
+and this also makes it easy to see/find all generated names in your Excel sheet.
+
+| Row | Adjusted Name | Adjusted with Prefix |
+| --- | --- | --- | 
+| Zeit hh:mm | Zeit_hh_mm | n.Zeit_hh_mm | 
+| Preis $ | Preis__ |n.Preis__  |
+| Preis/h | Preis_h | n.Preis_h |
+| 1 | \_1 | n.1 |
+
 ## Motivation
 The Excel documentation is not very clear about which letters you may 
 use for Excel Names:  
