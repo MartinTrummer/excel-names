@@ -4,7 +4,7 @@ The VBA code that has been used to genearte the data on the
 [Excel Sheet](NameRulesUnicode64k.xlsm) is contained in the
 [VBA module mExcelNamesGenerator](source/mExcelNamesGenerator.bas).
 
-This was inspired by [this Stackoverflow anser](http://stackoverflow.com/a/41877926/1041641) 
+This was inspired by [this Stackoverflow anwser](http://stackoverflow.com/a/41877926/1041641) 
 by user [Gary's Student](http://stackoverflow.com/users/2474656/garys-student).
 
 The idea is that we simply iterate over all unicode characters and 
