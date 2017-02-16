@@ -42,6 +42,7 @@ if so, please file [an issue](https://github.com/MartinTrummer/excel-names/issue
   Examples:
   - `Names_IsCharCodeValidAtStart("a")` returns `true`
     - "ax" is okay
+    - "\a" is not okay (a switch)
     - "a$" is not okay ($ is always invalid)
     - "a1" is not okay (it is a cell-reference)
   - `Names_IsCharCodeValidAtStart("?")` returns `false`
@@ -73,6 +74,8 @@ Rules for adjusting an Excel Name ("_" as replace character):
   - "1" -> "_1"
 - Invalid start char but valid afterwards - prepend replace char:
   - "?x" -> "_?x"
+- Switches (backslash followed by a single character) - prepend replace char:
+  - "\a" -> "_\a"
 - Invalid start char (and also valid afterwards) - converted to the replace char:
   - "$x" -> "_x"
 - Spaces are converted to the replace char:  
@@ -86,7 +89,10 @@ Rules for adjusting an Excel Name ("_" as replace character):
 - Cell-ref like: prepend the replace char
   - "A1" -> "_A1"
   - "R1C1" -> "_R1C1"
-  - Note: this check is intentionally more strict than necessary: see ["Cell-References"](#cell-references) below for details
+  - Note: this check is intentionally more strict than necessary: 
+    - Switches (e.g. "\a") are generally disallowed, because they are all invalid on the Workbook.
+    - see ["Cell-References"](#cell-references) below for details
+
 
 ### Cell-References
 The Excel Name check functions in our VBA code are overly strict for cell-reference-like Excel Names.  

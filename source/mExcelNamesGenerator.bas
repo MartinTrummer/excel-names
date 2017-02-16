@@ -40,8 +40,12 @@ Private Const COL_CHAR_OTHER_CASE = 3
 Private Const COL_CHAR_AS_NAME_IS_OKAY = 4
 Private Const COL_CHAR_AT_START_IS_OKAY = 5
 Private Const COL_CHAR_AFTER_START_IS_OKAY = 6
-
-Private startDateTime As Double
+Private Const COL_CHAR_SWITCH_IS_OKAY = 7
+Private Const COL_CHAR_AS_NAME_IS_OKAY_WB = 8
+Private Const COL_CHAR_AT_START_IS_OKAY_WB = 9
+Private Const COL_CHAR_AFTER_START_IS_OKAY_WB = 10
+Private Const COL_CHAR_SWITCH_IS_OKAY_WB = 11
+Private Const COL_LAST = COL_CHAR_SWITCH_IS_OKAY_WB
 
 Private Sub Dbg(sMessage As String)
     Debug.Print Now & ": " & sMessage
@@ -90,11 +94,12 @@ End Sub
 
 ' will format the given column green if the cell values are true
 ' red otherwise
-Private Sub ConditionalBooleanFormat4Col(iCol As Long)
+Public Sub ConditionalBooleanFormat4Col(lColStart As Long, lColEnd As Long)
 
     Const IS_TRUE_STRING = "=TRUE"
     Dim oRange As Range
-    Set oRange = GetColRangeWithoutHeader(iCol)
+    Set oRange = GetColRangeWithoutHeader(lColStart).Resize(, lColEnd - lColStart + 1)
+    
     oRange.Select
     
     Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlNotEqual, _
@@ -132,9 +137,7 @@ Private Sub CondFormat()
     ClearAllConditionalFormats
     
     CondFormatWarnIfNotEmpty COL_CHAR_OTHER_CASE
-    ConditionalBooleanFormat4Col COL_CHAR_AS_NAME_IS_OKAY
-    ConditionalBooleanFormat4Col COL_CHAR_AT_START_IS_OKAY
-    ConditionalBooleanFormat4Col COL_CHAR_AFTER_START_IS_OKAY
+    ConditionalBooleanFormat4Col COL_CHAR_AS_NAME_IS_OKAY, COL_CHAR_SWITCH_IS_OKAY_WB
     
     ' "unselect"
     Range("A1").Select
@@ -142,7 +145,7 @@ Private Sub CondFormat()
 End Sub
 
 ' returns if it is possible to create the given name in the given worksheet
-Private Function IsNameValid(sNameToTest As String, _
+Public Function IsNameValid(lCharCode As Long, sNameToTest As String, _
  Optional oWsTemp As Worksheet = Nothing) As Boolean
     Dim oNameObj As Name
     Dim bResult As Boolean
@@ -151,16 +154,14 @@ Private Function IsNameValid(sNameToTest As String, _
 
     bResult = False
     On Error Resume Next
-    
-    Err.Clear
-    
     If oWsTemp Is Nothing Then
         Set oNameObj = ActiveWorkbook.Names.Add(sNameToTest, " ")
     Else
         Set oNameObj = oWsTemp.Names.Add(sNameToTest, " ")
-        sSheetRef = oWsTemp.Name & "!"
     End If
-    If Err.Number = 0 Then
+    On Error GoTo 0
+    If Not oNameObj Is Nothing Then
+        If Not oWsTemp Is Nothing Then sSheetRef = oWsTemp.Name & "!"
         ' e.g. when you enter a name that ends with a space
         '      character "abc " the trailing space will automatically
         '      be ignored: i.e. the generated name is "abc" (not "abc ")
@@ -169,13 +170,19 @@ Private Function IsNameValid(sNameToTest As String, _
         If oNameObj.Name = sExpectedName Then
             bResult = True
         Else
-            Dbg "mismatch: >" & oNameObj.Name & "< vs. >" & sExpectedName & "<"
+            ' this can happen when the name starts or ends with a space
+            ' because Excel will automatically trim the spaces
+            ' e.g. input " a " will create a name "a"
+            Dbg "mismatch: " & lCharCode & "=>" & oNameObj.Name & "< (expected: >" & sExpectedName & "<)"
         End If
-       ' delete immediatley, because Excel cannot handle hundreds of names very well
-       oNameObj.Delete
+        ' note: we must always delete the name object right away to avoid
+        '       problems with duplicates
+        '       e.g. when the name already exists on the sheet and we try to
+        '            create the same name on the workbook, we get back the
+        '            existing reference from the sheet
+        ' unfortunately deleting the names does not really speed things up...
+        oNameObj.Delete
     End If
-    
-    On Error GoTo 0
      
     IsNameValid = bResult
     
@@ -214,14 +221,20 @@ Private Sub GenerateData(Optional lStart As Long = 1 _
     Cells(NO_OF_HEADER_ROWS, COL_CHAR_CODE).Value = "Chr-Code"
     Cells(NO_OF_HEADER_ROWS, COL_CHAR).Value = "Char"
     Cells(NO_OF_HEADER_ROWS, COL_CHAR_OTHER_CASE).Value = "Other Case"
+    
     Cells(NO_OF_HEADER_ROWS, COL_CHAR_AS_NAME_IS_OKAY).Value = "OK"
     Cells(NO_OF_HEADER_ROWS, COL_CHAR_AT_START_IS_OKAY).Value = "OK at start"
     Cells(NO_OF_HEADER_ROWS, COL_CHAR_AFTER_START_IS_OKAY).Value = "OK after start"
+    Cells(NO_OF_HEADER_ROWS, COL_CHAR_SWITCH_IS_OKAY).Value = "OK Switch"
     
+    Cells(NO_OF_HEADER_ROWS, COL_CHAR_AS_NAME_IS_OKAY_WB).Value = "WB OK"
+    Cells(NO_OF_HEADER_ROWS, COL_CHAR_AT_START_IS_OKAY_WB).Value = "WB OK at start"
+    Cells(NO_OF_HEADER_ROWS, COL_CHAR_AFTER_START_IS_OKAY_WB).Value = "WB OK after start"
+    Cells(NO_OF_HEADER_ROWS, COL_CHAR_SWITCH_IS_OKAY_WB).Value = "WB OK Switch"
+
     Dbg "preparing calculation"
     
-    Dim arrCalculated(1 To NAMES_MAX_UNICODE_CHARACTER_CODE, COL_CHAR_CODE To COL_CHAR_AFTER_START_IS_OKAY) As Variant
-    Dim arrDuplicates(1 To NAMES_MAX_UNICODE_CHARACTER_CODE) As String
+    Dim arrCalculated(1 To NAMES_MAX_UNICODE_CHARACTER_CODE, COL_CHAR_CODE To COL_LAST) As Variant
     
     Dbg "starting calculation"
     
@@ -249,15 +262,35 @@ Private Sub GenerateData(Optional lStart As Long = 1 _
         
         ' check character alone
         sNameToTest = sCurrentChar
-        arrCalculated(i, COL_CHAR_AS_NAME_IS_OKAY) = IsNameValid(sNameToTest, oWsTemp)
+        arrCalculated(i, COL_CHAR_AS_NAME_IS_OKAY) = IsNameValid(i, sNameToTest, oWsTemp)
         
         ' check character at the start
         sNameToTest = sCurrentChar & "_" & RANDOM_VALID_IDENTIFIERS
-        arrCalculated(i, COL_CHAR_AT_START_IS_OKAY) = IsNameValid(sNameToTest, oWsTemp)
+        arrCalculated(i, COL_CHAR_AT_START_IS_OKAY) = IsNameValid(i, sNameToTest, oWsTemp)
         
         ' check character AFTER the start
         sNameToTest = RANDOM_VALID_IDENTIFIERS & "_" & sCurrentChar
-        arrCalculated(i, COL_CHAR_AFTER_START_IS_OKAY) = IsNameValid(sNameToTest, oWsTemp)
+        arrCalculated(i, COL_CHAR_AFTER_START_IS_OKAY) = IsNameValid(i, sNameToTest, oWsTemp)
+    
+        ' check switch: e.g. "\a", ..
+        sNameToTest = "\" & sCurrentChar
+        arrCalculated(i, COL_CHAR_SWITCH_IS_OKAY) = IsNameValid(i, sNameToTest, oWsTemp)
+    
+        ' Workbook: check character alone
+        sNameToTest = sCurrentChar
+        arrCalculated(i, COL_CHAR_AS_NAME_IS_OKAY_WB) = IsNameValid(i, sNameToTest)
+        
+        ' Workbook: check character at the start
+        sNameToTest = sCurrentChar & "_" & RANDOM_VALID_IDENTIFIERS
+        arrCalculated(i, COL_CHAR_AT_START_IS_OKAY_WB) = IsNameValid(i, sNameToTest)
+        
+        ' Workbook: check character AFTER the start
+        sNameToTest = RANDOM_VALID_IDENTIFIERS & "_" & sCurrentChar
+        arrCalculated(i, COL_CHAR_AFTER_START_IS_OKAY_WB) = IsNameValid(i, sNameToTest)
+        
+        ' Workbook: check switch: e.g. "\a", ..
+        sNameToTest = "\" & sCurrentChar
+        arrCalculated(i, COL_CHAR_SWITCH_IS_OKAY_WB) = IsNameValid(i, sNameToTest)
     Next i
     oWsTemp.Delete
     Set oWsTemp = Nothing
@@ -288,9 +321,17 @@ Private Sub CreateDataNames(oFirstDataRange As Range, lNoOfRows As Long)
     
     SetDataName oFirstDataRange, COL_CHAR, "dataChar"
     SetDataName oFirstDataRange, COL_CHAR_OTHER_CASE, "dataOtherCase"
+    
     SetDataName oFirstDataRange, COL_CHAR_AS_NAME_IS_OKAY, "dataNameOk"
     SetDataName oFirstDataRange, COL_CHAR_AT_START_IS_OKAY, "dataStartOk"
     SetDataName oFirstDataRange, COL_CHAR_AFTER_START_IS_OKAY, "dataAfterStartOk"
+    SetDataName oFirstDataRange, COL_CHAR_SWITCH_IS_OKAY, "dataSwitchOk"
+
+    SetDataName oFirstDataRange, COL_CHAR_AS_NAME_IS_OKAY_WB, "dataNameOkWb"
+    SetDataName oFirstDataRange, COL_CHAR_AT_START_IS_OKAY_WB, "dataStartOkWb"
+    SetDataName oFirstDataRange, COL_CHAR_AFTER_START_IS_OKAY_WB, "dataAfterStartOkWb"
+    SetDataName oFirstDataRange, COL_CHAR_SWITCH_IS_OKAY_WB, "dataSwitchOkWb"
+
 End Sub
 
 Private Sub SetDataName(oFirstDataRange As Range, lCol As Long, sName As String)
@@ -301,22 +342,9 @@ End Sub
 
 Public Sub StartDataGeneration()
 
-    On Error GoTo Finally
-    
-    ' switiching off the following features gives
-    ' a huge performance gain
-    ActiveSheet.DisplayPageBreaks = False
-    Application.EnableEvents = False
-    Application.DisplayAlerts = False
-    Application.ScreenUpdating = False
-    Application.DisplayStatusBar = False
-    Application.Calculation = xlCalculationManual
-    
-    startDateTime = Now
+    Dim oExcelPerf As cExcelPerf
+    Set oExcelPerf = New cExcelPerf
 
-    ' use this to only generate the ASCII characters
-    'GenerateData 1, 255
-    ' use this to only generate all unicode characters
     ' !ATTENTION! this may take several minutes and your
     '             PC may be unresponsive during this time !
     ' e.g. on an i7-2630QM CPU @ 2GHz it takes about 2 minutes
@@ -324,19 +352,15 @@ Public Sub StartDataGeneration()
     '      minutes until Excel is responsive again
     '      these numbers are valid when you have an empty
     '      sheet without any calculations, etc.
-    GenerateData
-
+    
+    'GenerateData 1, 255 ' use this to only generate the ASCII characters
+    GenerateData ' use this to generate all unicode characters
+    
     Dbg "applying format"
     
     CondFormat
     
-Finally:
-    Application.EnableEvents = True
-    Application.DisplayAlerts = True
-    Application.ScreenUpdating = True
-    Application.DisplayStatusBar = True
-    Application.Calculation = xlCalculationAutomatic
-
-    Dbg "finished in " & (Now - startDateTime)
 End Sub
+
+
 

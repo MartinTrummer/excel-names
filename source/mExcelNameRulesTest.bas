@@ -124,7 +124,7 @@ Private Sub Test_IsValidName_MultipleCharacters()
     AssertNamesInvalid "1A"
     
     ' test some VALID characters
-    AssertNamesValid "AA", "ZA", "\A", "_A", ChrW$(ALWAYS_VALID_UNICODE) & "A"
+    AssertNamesValid "AA", "ZA", "_A", ChrW$(ALWAYS_VALID_UNICODE) & "A"
     
     ' c, r: are valid at the start
     AssertNamesValid "cA", "CA", "rA", "RA"
@@ -142,6 +142,22 @@ Private Sub Test_IsValidName_CellReferences()
     AssertNamesInvalid "R1C1", "R10", "C10", "R123C123"
 End Sub
 
+' test switches: e.g. "\a"
+Private Sub Test_IsValidName_Switches()
+    AssertNamesInvalid "\a", "\$", "\ "
+    AssertNamesValid "\", "\aa", "\01"
+End Sub
+
+' 2 characters are invalid when used no a workbook
+Private Sub Test_IsValidName_Workbook()
+    ' the following 2 chars are invalid for names on a workbook
+    ' but valid on worksheets
+    ' we treat them always as invalid
+    AssertNamesInvalid ChrW$(173) & "_x", ChrW$(1600) & "_x"
+    ' check if other chars are oky
+    AssertNamesValid "a_x"
+End Sub
+
 Public Sub Names_Tests_IsValidName()
     
     Const TEST_NAME = "Names_Tests_IsValidName"
@@ -155,6 +171,10 @@ Public Sub Names_Tests_IsValidName()
     Test_IsValidName_MultipleCharacters
     Test_IsValidName_Space
     Test_IsValidName_CellReferences
+    
+    Test_IsValidName_Workbook
+    
+    Test_IsValidName_Switches
     
     ' test identifier that is too long
     Dim sNameTooLong As String
@@ -224,6 +244,20 @@ Private Sub AssertAdjustNamePrependsReplacement(ParamArray varrInvalidNames() As
     Next
 End Sub
 
+' Names_Tests_PrintAdjustedNames "n.", "Zeit hh:mm","Preis $","Preis/h","1"
+Public Sub Names_Tests_PrintAdjustedNames(Prefix As String, ParamArray varrInvalidNames() As Variant)
+
+    Dim vName As Variant
+    Dim sName As String
+    Dim sExpected As String
+    For Each vName In varrInvalidNames
+        sName = "" & vName
+        Debug.Print "---"
+        Debug.Print sName
+        Debug.Print Names_AdjustName(Prefix & sName)
+    Next
+End Sub
+
 Public Sub Names_Tests_AdjustName()
     
     Const TEST_NAME = "Names_Tests_IsValidName"
@@ -254,6 +288,12 @@ Public Sub Names_Tests_AdjustName()
     AssertAdjustName "?x", "_?x"
     ' (always) invalid start char
     AssertAdjustName "$x", "_x"
+    
+    ' switches (e.g. "\a") are invalid
+    AssertAdjustName "\a", "_\a"
+    AssertAdjustName "\1", "_\1"
+    ' no change expected
+    AssertAdjustName "\aa", "\aa"
     
     ' invalid cell-ref
     AssertAdjustNamePrependsReplacement "A1", "a1"

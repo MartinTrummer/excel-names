@@ -28,6 +28,11 @@ Private mInvalidAtStart(1 To NAMES_NO_OF_INVALID_CHAR_CODES_AT_START) As Long
 ' e.g. you cannot use them alone as a name: "c", "C", "r", "R"
 Private mInvalidAsFullName(1 To 4) As Long
 
+' These characters are invalid t the start of a name
+' when you add the name to the workbook (worksheet is okay)
+' these are only 2 characters
+Private mInvalidAtStartOfWbOnly(1 To 2) As Long
+
 ' see Chr help: https://msdn.microsoft.com/en-us/library/office/gg264465.aspx
 Public Const NAMES_MAX_UNICODE_CHARACTER_CODE = 65535
 
@@ -51,6 +56,10 @@ Private Sub Init()
     mInvalidAsFullName(2) = 82 ' R
     mInvalidAsFullName(3) = 99 ' c
     mInvalidAsFullName(4) = 114 ' r
+    
+    mInvalidAtStartOfWbOnly(1) = 173
+    mInvalidAtStartOfWbOnly(2) = 1600
+    
 End Sub
 
 Private Sub LazyInit()
@@ -155,6 +164,17 @@ Private Function LeftTrimToMaxLen(sInput As String, lMaxLen As Long) As String
 
 End Function
 
+' Returns true, when input is a a backslash followed by
+' exactly one character. Examples:
+' * "\a" -> true
+' * "\!" -> true
+' * "\aa" -> false
+' * "aa" -> false
+Private Function IsSwitch(ByVal sInput As String) As Boolean
+    IsSwitch = (Len(sInput) = 2) _
+        And (Left$(sInput, 1) = "\")
+End Function
+
 Private Function ValidateName(ByRef sNameToTest As String, _
     Optional sReplaceChar As String = "") As Boolean
 
@@ -211,7 +231,10 @@ Private Function ValidateName(ByRef sNameToTest As String, _
         
         sCharToTest = Left$(sNameToTest, 1)
         ' test the first character
-        If Not Names_IsCharValidAtStart(sCharToTest) Then
+        Dim bInvalidStart As Boolean
+        bInvalidStart = Not Names_IsCharValidAtStart(sCharToTest) _
+            Or IsSwitch(sNameToTest)
+        If bInvalidStart Then
             If bAdjustName Then
                 If Names_IsCharValidAfterStart(sCharToTest) Then
                     ' start with the replace character which is for sure valid
@@ -261,6 +284,7 @@ Private Function ValidateName(ByRef sNameToTest As String, _
                 GoTo NameIsInvalid
             End If
         End If
+        
     End If
     GoTo NameIsValid
     
@@ -352,7 +376,8 @@ End Function
 Public Function Names_IsCharCodeValidAtStart(lCharCode As Long) As Boolean
     LazyInit
     Names_IsCharCodeValidAtStart = Names_IsCharCodeValidAfterStart(lCharCode) _
-        And (Not ArrayContains(mInvalidAtStart, lCharCode))
+        And (Not ArrayContains(mInvalidAtStart, lCharCode)) _
+        And (Not ArrayContains(mInvalidAtStartOfWbOnly, lCharCode))
 End Function
 
 ' This function returns true when the character can be used as

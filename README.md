@@ -90,11 +90,20 @@ This is the least restrictive case. 61,394 characters are allowed.
   - INVALID examples: 
     - "$a": $ is always invalid
     - "?a": ? is only valid after the start (e.g. "a?" is okay)  
-- Column G **only after start**: characters that are usually valid **only** after the start (but not at the start).  
+- Column G **OK Switch**: a switch conists of the backslash and exactly one character: e.g. "\a"
+  For Excel-Names on the Worksheet this is the same as **OK after start**, but for 
+  Excel-Names on the Workbook all switches are invalid.
+- Columns I to K are the same as D to H with the only difference that the names have been created on 
+  the Workbook (instead of the Worksheet)  
+  Note, there are 2 differences:
+  - Column I: there are 2 characters (Unicode: 173, 1600) which are  invalid on the Workbook, but are valid on the Worksheet
+  - Column K: all switches on the Workbook are invalid    
+- Column L **only after start**: characters that are usually valid **only** after the start (but not at the start).  
   These 6,719 characters are invalid at the start, but valid after the start.
   - Included: "?": "a?" is valid, but "?a" is not
   - NOT included: "A": "Axy" is valid (at the start) and "xyA" is also valid (after the start)
- 
+- Column M **WB only after start**: same as L but for the Workbook
+
  **Usually valid** means that there can still be exceptions.
  Examples: 
 - "C" is usually okay at the start:
@@ -102,7 +111,7 @@ This is the least restrictive case. 61,394 characters are allowed.
   - "C1" is not, because it is a cell-reference
 - "\" is usually valid at the start
   - "\xyz" is okay
-  - "\x" is not
+  - "\x" is not (switch)
 
 For details, how this data has been generated see [DataGeneration](DataGeneration.md)  
 
