@@ -132,7 +132,3 @@ Excel 2013 Examples (X = INVALID):
   There are for sure some edge cases that are currently not covered by the VBA code.  
   If you find any issues or have ideas to improve it, please 
   file [an issue](https://github.com/MartinTrummer/excel-names/issues).  
-  Currently known edge-cases:
-  - backspace followed by a single character seems to be invalid
-    Invalid examples: "\a", "\x", ...
-
