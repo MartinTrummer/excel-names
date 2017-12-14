@@ -100,6 +100,10 @@ This is intended to keep the check-code simpler and to improve upwards-compatibi
 We **disallow ALL** Excel Names that start with letter, followed by one or more digits (which applies to all the examples in the table below).
 
 Notes:
+- Cell References are dependent on the locale: Example
+  - "R1C2" English = "Z1R2" German = "L1C2" French
+  - That means, that you can use a name like "Z1R2" in an English Excel workbook. But when you save this and try to open it on a German PC, Excel will report that the file is corrupt and when you repair it the cell name will be lost!  
+  Thanks to user @maninweb for reporting issue #3 
 - "R1048577C1" is a valid Excel Name (in Excel 2013)  
     - We guess, because the row 1048577 is higher than the max. possible row in Excel 2013.  
     Future Excel version may allow more rows and then this reference may become invalid in those versions.  
@@ -108,7 +112,7 @@ Notes:
   e.g. "R1C16385xxx" is not a valid cell-reference (note the trailing "xxx" characters after the R1C1 notation), 
   but still you cannot use this as an Excel Name.
 
-Excel 2013 Examples (X = INVALID):
+Excel 2013 Examples (X = INVALID) for English locale:
 
 | Example | Cell-Ref | Excel-Name | Note |
 | --- | --- | --- | --- |

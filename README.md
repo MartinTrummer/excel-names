@@ -109,7 +109,8 @@ This is the least restrictive case. 61,394 characters are allowed.
 - "C" is usually okay at the start:
   - "Cat" is a valid name
   - "C1" is not, because it is a cell-reference
-- "\" is usually valid at the start
+- Also note, that the rules depend on the locale (the rules in the Excel sheet have been created for English): see  ["Cell-References"](VbaCode.md#cell-references) 
+- A backslash is usually valid at the start
   - "\xyz" is okay
   - "\x" is not (switch)
 
