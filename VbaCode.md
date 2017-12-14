@@ -103,7 +103,7 @@ Notes:
 - Cell References are dependent on the locale: Example
   - "R1C2" English = "Z1R2" German = "L1C2" French
   - That means, that you can use a name like "Z1R2" in an English Excel workbook. But when you save this and try to open it on a German PC, Excel will report that the file is corrupt and when you repair it the cell name will be lost!  
-  Thanks to user @maninweb for reporting issue #3 
+  Thanks to [user maninweb](https://github.com/maninweb) for reporting issue [#3](../../issues/3)
 - "R1048577C1" is a valid Excel Name (in Excel 2013)  
     - We guess, because the row 1048577 is higher than the max. possible row in Excel 2013.  
     Future Excel version may allow more rows and then this reference may become invalid in those versions.  
