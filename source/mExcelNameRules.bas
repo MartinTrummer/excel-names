@@ -1,4 +1,4 @@
-Attribute VB_Name = "MExcelNameRules"
+Attribute VB_Name = "mExcelNameRules"
 '
 ' This is free and unencumbered software released into the public domain.
 '
